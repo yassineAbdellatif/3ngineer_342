@@ -22,6 +22,7 @@ export default function ResultsTable({ results }) {
             <TableCell>Arrival Time</TableCell>
             <TableCell>Duration</TableCell>
             <TableCell>Train Type</TableCell>
+            <TableCell>Days of Operation</TableCell>
             <TableCell>1st Class (€)</TableCell>
             <TableCell>2nd Class (€)</TableCell>
           </TableRow>
@@ -35,6 +36,7 @@ export default function ResultsTable({ results }) {
             <TableCell>{trip.arrivalTime}</TableCell>
             <TableCell>{trip.duration}</TableCell>
             <TableCell>{trip.trainType}</TableCell>
+            <TableCell>{trip.daysOfOperation}</TableCell>
             <TableCell>{trip.firstClassPrice}</TableCell>
             <TableCell>{trip.secondClassPrice}</TableCell>
           </TableRow>
