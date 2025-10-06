@@ -1,8 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const connectionsRoutes = require('./routes/connections');
-
+const express = require('express');
+const cors = require('cors');
 const app = express();
+
+app.use(cors()); // allow requests from any origin
+app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
