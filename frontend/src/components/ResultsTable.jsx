@@ -11,8 +11,8 @@ import {
 import { useState } from 'react';
 
 export default function ResultsTable({ results }) {
-  const [orderBy, setOrderBy] = useState('duration'); // default sort field
-  const [order, setOrder] = useState('asc'); // asc or desc
+  const [orderBy, setOrderBy] = useState('duration');
+  const [order, setOrder] = useState('asc');
 
   const handleSort = (field) => {
     const isAsc = orderBy === field && order === 'asc';
@@ -20,17 +20,17 @@ export default function ResultsTable({ results }) {
     setOrderBy(field);
   };
 
+  const parseDuration = (str) => {
+    if (!str) return 0;
+    const match = str.match(/(\d+)h (\d+)m/);
+    return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
+  };
+
   const sortedResults = [...results].sort((a, b) => {
     let valA = a[orderBy];
     let valB = b[orderBy];
 
-    // For duration, convert "Xh Ym" to minutes
     if (orderBy === 'duration') {
-      const parseDuration = (str) => {
-        if (!str) return 0;
-        const match = str.match(/(\d+)h (\d+)m/);
-        return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
-      };
       valA = parseDuration(valA);
       valB = parseDuration(valB);
     }
@@ -78,22 +78,32 @@ export default function ResultsTable({ results }) {
                 2nd Class (€)
               </TableSortLabel>
             </TableCell>
+            <TableCell>Change Time(s)</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {sortedResults.map((trip, idx) => (
-            <TableRow key={idx}>
-              <TableCell>{trip.departure}</TableCell>
-              <TableCell>{trip.arrival}</TableCell>
-              <TableCell>{trip.departureTime}</TableCell>
-              <TableCell>{trip.arrivalTime}</TableCell>
-              <TableCell>{trip.duration}</TableCell>
-              <TableCell>{trip.trainType}</TableCell>
-              <TableCell>{trip.daysOfOperation}</TableCell>
-              <TableCell>{trip.firstClassPrice}</TableCell>
-              <TableCell>{trip.secondClassPrice}</TableCell>
-            </TableRow>
-          ))}
+          {sortedResults.map((trip, idx) => {
+            const firstSeg = trip.segments[0];
+            const lastSeg = trip.segments[trip.segments.length - 1];
+            const changeTimesDisplay = trip.changeTimes.length > 0
+              ? trip.changeTimes.join(' | ')
+              : '-';
+
+            return (
+              <TableRow key={idx}>
+                <TableCell>{firstSeg['Departure City']}</TableCell>
+                <TableCell>{lastSeg['Arrival City']}</TableCell>
+                <TableCell>{firstSeg['Departure Time']}</TableCell>
+                <TableCell>{lastSeg['Arrival Time']}</TableCell>
+                <TableCell>{trip.duration}</TableCell>
+                <TableCell>{trip.trainType}</TableCell>
+                <TableCell>{trip.daysOfOperation}</TableCell>
+                <TableCell>{trip.firstClassPrice}</TableCell>
+                <TableCell>{trip.secondClassPrice}</TableCell>
+                <TableCell>{changeTimesDisplay}</TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </TableContainer>
