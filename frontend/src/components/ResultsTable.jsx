@@ -28,16 +28,16 @@ export default function ResultsTable({ results }) {
         </TableHead>
         <TableBody>
           {results.map((trip, idx) => (
-            <TableRow key={idx}>
-              <TableCell>{trip['Departure City']}</TableCell>
-              <TableCell>{trip['Arrival City']}</TableCell>
-              <TableCell>{trip['Departure Time']}</TableCell>
-              <TableCell>{trip['Arrival Time']}</TableCell>
-              <TableCell>{trip.duration}</TableCell>
-              <TableCell>{trip['Train Type']}</TableCell>
-              <TableCell>{trip['First Class ticket rate']}</TableCell>
-              <TableCell>{trip['Second Class ticket rate']}</TableCell>
-            </TableRow>
+          <TableRow key={idx}>
+            <TableCell>{trip.departure}</TableCell>
+            <TableCell>{trip.arrival}</TableCell>
+            <TableCell>{trip.departureTime}</TableCell>
+            <TableCell>{trip.arrivalTime}</TableCell>
+            <TableCell>{trip.duration}</TableCell>
+            <TableCell>{trip.trainType}</TableCell>
+            <TableCell>{trip.firstClassPrice}</TableCell>
+            <TableCell>{trip.secondClassPrice}</TableCell>
+          </TableRow>
           ))}
         </TableBody>
       </Table>

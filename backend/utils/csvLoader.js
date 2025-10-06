@@ -14,14 +14,25 @@ function loadCSVData() {
   return results;
 }
 
-// Example search function
 function findConnections(routes, query) {
-  return routes.filter(route => {
-    let match = true;
-    if (query.departure) match = match && route['Departure City'] === query.departure;
-    if (query.arrival) match = match && route['Arrival City'] === query.arrival;
-    return match;
-  });
-}
+  const { departure, arrival } = query;
 
+  return routes
+    .filter(
+      (r) =>
+        r['Departure City'] === departure &&
+        r['Arrival City'] === arrival
+    )
+    .map((r) => ({
+      routeId: r['Route ID'],
+      departure: r['Departure City'],
+      arrival: r['Arrival City'],
+      departureTime: r['Departure Time'],
+      arrivalTime: r['Arrival Time'],
+      trainType: r['Train Type'],
+      daysOfOperation: r['Days of Operation'],
+      firstClassPrice: (r['First Class ticket rate (in euro)']),
+      secondClassPrice: (r['Second Class ticket rate (in euro)']),
+    }));
+}
 module.exports = { loadCSVData, findConnections };

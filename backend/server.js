@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const connectionsRoutes = require('./routes/connections');
-const express = require('express');
-const cors = require('cors');
 const app = express();
 
 app.use(cors()); // allow requests from any origin
