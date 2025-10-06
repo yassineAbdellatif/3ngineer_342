@@ -15,32 +15,59 @@ function loadCSVData() {
 }
 
 function findConnections(routes, query) {
-  const { departure, arrival } = query;
-
   return routes
-    .filter(
-      (r) =>
-        r['Departure City'] === departure &&
-        r['Arrival City'] === arrival
-    )
-      .map((r) => {
-        const depTime = r['Departure Time'];
-        const arrTime = r['Arrival Time'];
+    .filter((r) => {
+      // Go through every key in the query object
+      for (let key in query) {
+        if (!query[key]) continue; // skip empty search fields
 
-        return {
-          routeId: r['Route ID'],
-          departure: r['Departure City'],
-          arrival: r['Arrival City'],
-          departureTime: depTime,
-          arrivalTime: arrTime,
-          duration: calculateDuration(depTime, arrTime), // <-- add duration here
-          trainType: r['Train Type'],
-          daysOfOperation: r['Days of Operation'],
-          firstClassPrice: parseFloat(r['First Class ticket rate (in euro)']),
-          secondClassPrice: parseFloat(r['Second Class ticket rate (in euro)']),
-        };
-      });
+        const value = query[key].toLowerCase();
+        
+        // Map query keys to your backend keys
+        switch (key) {
+          case 'departure':
+            if (!r['Departure City'].toLowerCase().includes(value)) return false;
+            break;
+          case 'arrival':
+            if (!r['Arrival City'].toLowerCase().includes(value)) return false;
+            break;
+          case 'departureTime':
+            if (!r['Departure Time'].toLowerCase().includes(value)) return false;
+            break;
+          case 'arrivalTime':
+            if (!r['Arrival Time'].toLowerCase().includes(value)) return false;
+            break;
+          case 'trainType':
+            if (!r['Train Type'].toLowerCase().includes(value)) return false;
+            break;
+          case 'daysOfOperation':
+            if (!r['Days of Operation'].toLowerCase().includes(value)) return false;
+            break;
+          case 'firstClassPrice':
+            if (parseFloat(r['First Class ticket rate (in euro)']) !== parseFloat(value)) return false;
+            break;
+          case 'secondClassPrice':
+            if (parseFloat(r['Second Class ticket rate (in euro)']) !== parseFloat(value)) return false;
+            break;
+          default:
+            break;
+        }
       }
+      return true;
+    })
+    .map((r) => ({
+      routeId: r['Route ID'],
+      departure: r['Departure City'],
+      arrival: r['Arrival City'],
+      departureTime: r['Departure Time'],
+      arrivalTime: r['Arrival Time'],
+      duration: calculateDuration(r['Departure Time'], r['Arrival Time']),
+      trainType: r['Train Type'],
+      daysOfOperation: r['Days of Operation'],
+      firstClassPrice: parseFloat(r['First Class ticket rate (in euro)']),
+      secondClassPrice: parseFloat(r['Second Class ticket rate (in euro)']),
+    }));
+}
 
       function calculateDuration(departureTime, arrivalTime) {
   if (!departureTime || !arrivalTime) return 'N/A';
