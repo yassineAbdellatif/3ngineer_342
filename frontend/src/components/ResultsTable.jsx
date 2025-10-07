@@ -26,13 +26,62 @@ export default function ResultsTable({ results }) {
     return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
   };
 
-  const sortedResults = [...results].sort((a, b) => {
+  const parseTime = (timeStr) => {
+    if (!timeStr) return 0;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  const calculateDuration = (start, end) => {
+    const startMins = parseTime(start);
+    const endMins = parseTime(end);
+    return endMins >= startMins ? endMins - startMins : (24 * 60 - startMins) + endMins;
+  }
+
+  const isValidTrip = (trip) => {
+    if (!trip || !trip.segments || trip.segments.length === 0) return false;
+    const firstSeg = trip.segments[0];
+    const lastSeg = trip.segments[trip.segments.length - 1];
+    if (!firstSeg['Departure Time'] || !lastSeg['Arrival Time']) return false;
+
+    const hasNextDay = lastSeg['Arrival Time'].includes('+1d');
+    if (hasNextDay) return true;
+
+    const calculatedDuration = calculateDuration(firstSeg['Departure Time'], lastSeg['Arrival Time']);
+    const durationMins = parseDuration(trip.duration);
+    return calculatedDuration === durationMins;
+  }
+
+  // Filter out invalid trips
+  const validResults = results.filter(isValidTrip);
+
+  const sortedResults = [...validResults].sort((a, b) => {
     let valA = a[orderBy];
     let valB = b[orderBy];
 
     if (orderBy === 'duration') {
-      valA = parseDuration(valA);
-      valB = parseDuration(valB);
+      if (!valA || !valB === '-') {
+        const firstSegA = a.segments[0];
+        const lastSegA = a.segments[a.segments.length - 1];
+        valA = calculateDuration(firstSegA['Departure Time'], lastSegA['Arrival Time'].replace('+1d', '').trim()) + 'm';
+      } else {
+        valA = valA.replace('+1d', '').trim();
+      }
+
+      if (!valB || valB === '-') {
+        const firstSegB = b.segments[0];
+        const lastSegB = b.segments[b.segments.length - 1];
+        valB = calculateDuration(firstSegB['Departure Time'], lastSegB['Arrival Time'].replace('+1d', '').trim()) + 'm';
+      } else {
+        valB = valB.replace('+1d', '').trim();
+      }
+    }
+
+        if (typeof valA === 'string' && !isNaN(parseFloat(valA))) {
+      valA = parseFloat(valA);
+    }
+    if (typeof valB === 'string' && !isNaN(parseFloat(valB))) {
+      valB = parseFloat(valB);
     }
 
     return order === 'asc' ? valA - valB : valB - valA;
