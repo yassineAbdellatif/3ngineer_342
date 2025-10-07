@@ -14,12 +14,12 @@ export default function SearchForm({ onSearch }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSearch({
-      departure,
-      arrival,
+      departure: departure.toLowerCase().trim(),
+      arrival : arrival.toLowerCase().trim(),
       departureTime,
       arrivalTime,
-      trainType,
-      daysOfOperation,
+      trainType : trainType.toLowerCase().trim(),
+      daysOfOperation : daysOfOperation.toLowerCase().trim(),
       firstClassPrice,
       secondClassPrice,
     });
