@@ -28,14 +28,27 @@ export default function ResultsTable({ results }) {
 
   const parseTime = (timeStr) => {
     if (!timeStr) return 0;
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const cleanTimeStr = timeStr.replace('(+1d)', '').trim();
+    const [hours, minutes] = cleanTimeStr.split(':').map(Number);
     return hours * 60 + minutes;
   }
 
   const calculateDuration = (start, end) => {
     const startMins = parseTime(start);
     const endMins = parseTime(end);
+    const hasNextDay = end.includes('(+1d)');
+
+    if (hasNextDay) {
+      return (24 * 60 - startMins) + endMins;
+    } else {
     return endMins >= startMins ? endMins - startMins : (24 * 60 - startMins) + endMins;
+    }
+  }
+
+  const formatDuration = (mins) => {
+    const hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    return `${hours}h ${minutes}m`;
   }
 
   const isValidTrip = (trip) => {
@@ -44,40 +57,43 @@ export default function ResultsTable({ results }) {
     const lastSeg = trip.segments[trip.segments.length - 1];
     if (!firstSeg['Departure Time'] || !lastSeg['Arrival Time']) return false;
 
-    const hasNextDay = lastSeg['Arrival Time'].includes('+1d');
-    if (hasNextDay) return true;
+    const departureTime = firstSeg['Departure Time'];
+    const arrivalTime = lastSeg['Arrival Time'];
+    const hasNextDay = arrivalTime.includes('(+1d)');
+    
+    if (hasNextDay) {
+      return true;
+    }
 
-    const calculatedDuration = calculateDuration(firstSeg['Departure Time'], lastSeg['Arrival Time']);
-    const durationMins = parseDuration(trip.duration);
-    return calculatedDuration === durationMins;
+    const depMins = parseTime(departureTime);
+    const arrMins = parseTime(arrivalTime);
+    
+    return arrMins >= depMins;
   }
 
-  // Filter out invalid trips
   const validResults = results.filter(isValidTrip);
 
   const sortedResults = [...validResults].sort((a, b) => {
     let valA = a[orderBy];
     let valB = b[orderBy];
 
-    if (orderBy === 'duration') {
-      if (!valA || !valB === '-') {
+    if (!valA || valA === '-') {
         const firstSegA = a.segments[0];
         const lastSegA = a.segments[a.segments.length - 1];
-        valA = calculateDuration(firstSegA['Departure Time'], lastSegA['Arrival Time'].replace('+1d', '').trim()) + 'm';
+        valA = calculateDuration(firstSegA['Departure Time'], lastSegA['Arrival Time']);
       } else {
-        valA = valA.replace('+1d', '').trim();
+        valA = parseDuration(valA);
       }
 
       if (!valB || valB === '-') {
         const firstSegB = b.segments[0];
         const lastSegB = b.segments[b.segments.length - 1];
-        valB = calculateDuration(firstSegB['Departure Time'], lastSegB['Arrival Time'].replace('+1d', '').trim()) + 'm';
+        valB = calculateDuration(firstSegB['Departure Time'], lastSegB['Arrival Time']);
       } else {
-        valB = valB.replace('+1d', '').trim();
+        valB = parseDuration(valB);
       }
-    }
 
-        if (typeof valA === 'string' && !isNaN(parseFloat(valA))) {
+    if (typeof valA === 'string' && !isNaN(parseFloat(valA))) {
       valA = parseFloat(valA);
     }
     if (typeof valB === 'string' && !isNaN(parseFloat(valB))) {
@@ -87,7 +103,7 @@ export default function ResultsTable({ results }) {
     return order === 'asc' ? valA - valB : valB - valA;
   });
 
-  if (!results || results.length === 0) return <p>No trips found</p>;
+  if (!validResults || validResults.length === 0) return <p>No trips found</p>;
 
   return (
     <TableContainer component={Paper}>
@@ -138,13 +154,17 @@ export default function ResultsTable({ results }) {
               ? trip.changeTimes.join(' | ')
               : '-';
 
+            const displayDuration = trip.duration && trip.duration !== '-' && !trip.duration.includes('NaN')
+              ? trip.duration
+              : formatDuration(calculateDuration(firstSeg['Departure Time'], lastSeg['Arrival Time']));
+
             return (
               <TableRow key={idx}>
                 <TableCell>{firstSeg['Departure City']}</TableCell>
                 <TableCell>{lastSeg['Arrival City']}</TableCell>
                 <TableCell>{firstSeg['Departure Time']}</TableCell>
                 <TableCell>{lastSeg['Arrival Time']}</TableCell>
-                <TableCell>{trip.duration}</TableCell>
+                <TableCell>{displayDuration}</TableCell>
                 <TableCell>{trip.trainType}</TableCell>
                 <TableCell>{trip.daysOfOperation}</TableCell>
                 <TableCell>{trip.firstClassPrice}</TableCell>
