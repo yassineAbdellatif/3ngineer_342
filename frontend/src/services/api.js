@@ -12,9 +12,9 @@ export const searchConnections = async (query) => {
   }
 };
 
-export const getAllConnections = async (query) => {
+export const getAllConnections = async () => {
   try {
-    const response = await axios.get(API_URL, { params: query });
+    const response = await axios.get(API_URL);
     return response.data;
   } catch (error) {
     console.error('Error fetching all connections:', error);
