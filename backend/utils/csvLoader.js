@@ -25,147 +25,174 @@ function loadCSVData() {
   return results;
 }
 
-// Safely parse time strings to minutes
-function parseTime(str) {
-  if (!str) return 0;
-  const [hours, minutes] = str.split(':').map(Number);
-  return hours * 60 + minutes;
+function parseDayTime(str) {
+  if (!str || typeof str !== "string") return null;
+  const m = str.match(/^\s*(\d{1,2})[:h](\d{2})\s*(?:\(?\+\s*(\d+)\s*d\)?)?\s*$/i);
+  if (!m) return null;
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  const offset = m[3] ? parseInt(m[3], 10) : null;
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return { minutesOfDay: hh * 60 + mm, explicitOffset: offset };
 }
 
-// Format minutes as "Xh Ym"
-function formatDuration(minutes) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+// Build absolute times (minutes since start) for each segment
+function buildAbsoluteTimes(segments) {
+  const DAY = 24 * 60;
+  const result = [];
+  let prevAbsArrival = null;
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const depT = parseDayTime(seg["Departure Time"]);
+    const arrT = parseDayTime(seg["Arrival Time"]);
+    if (!depT || !arrT) return null;
+
+    // Choose departure offset
+    let depOffset = depT.explicitOffset ?? 0;
+    if (prevAbsArrival !== null) {
+      const prevDay = Math.floor(prevAbsArrival / DAY);
+      const prevMin = prevAbsArrival % DAY;
+      if (depT.explicitOffset === null) {
+        depOffset = prevDay + (depT.minutesOfDay < prevMin ? 1 : 0);
+      } else if (depOffset < prevDay || (depOffset === prevDay && depT.minutesOfDay < prevMin)) {
+        depOffset = prevDay + 1;
+      }
+    }
+
+    const depAbs = depOffset * DAY + depT.minutesOfDay;
+
+    // Choose arrival offset
+    let arrOffset = arrT.explicitOffset ?? depOffset;
+    let arrAbs = arrOffset * DAY + arrT.minutesOfDay;
+    while (arrAbs < depAbs) {
+      arrOffset++;
+      arrAbs = arrOffset * DAY + arrT.minutesOfDay;
+    }
+
+    result.push({ depAbs, arrAbs });
+    prevAbsArrival = arrAbs;
+  }
+
+  return result;
+}
+
+// Format duration in minutes -> "Xh Ym"
+function formatDuration(mins) {
+  if (mins == null || isNaN(mins)) return "NA";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
   return `${h}h ${m}m`;
 }
 
+// Format arrival with +Xd based on total duration
+function formatArrivalWithDays(depAbs, arrAbs, rawTime) {
+  const DAY = 24 * 60;
+  const dayDiff = Math.floor((arrAbs - depAbs) / DAY);
+  return dayDiff > 0 ? `${rawTime} (+${dayDiff}d)` : rawTime;
+}
+
 // Calculate total duration including waiting times
-function calculateConnectionDuration(tripSegments) {
+function calculateConnectionDuration(segments) {
+  const abs = buildAbsoluteTimes(segments);
+  if (!abs) return "NA";
+
   let total = 0;
-
-  for (let i = 0; i < tripSegments.length; i++) {
-    const seg = tripSegments[i];
-    const dep = parseTime(seg['Departure Time']);
-    const arr = parseTime(seg['Arrival Time']);
-    total += arr - dep;
-
+  for (let i = 0; i < abs.length; i++) {
+    const seg = abs[i];
+    total += seg.arrAbs - seg.depAbs; // travel time
     if (i > 0) {
-      const prevArr = parseTime(tripSegments[i - 1]['Arrival Time']);
-      total += dep - prevArr; // add change time
+      const wait = abs[i].depAbs - abs[i - 1].arrAbs;
+      total += Math.max(wait, 0);
     }
   }
-
   return formatDuration(total);
 }
 
-// Calculate change times between segments
-function calculateChangeTimes(tripSegments) {
-  const changeTimes = [];
-  for (let i = 1; i < tripSegments.length; i++) {
-    const prevArrival = parseTime(tripSegments[i - 1]['Arrival Time']);
-    const currDeparture = parseTime(tripSegments[i]['Departure Time']);
-    const diff = currDeparture - prevArrival;
-    changeTimes.push(diff > 0 ? formatDuration(diff) : '0h 0m');
+// Calculate waiting times (in minutes) between segments and return formatted strings
+function calculateChangeTimes(segments) {
+  const abs = buildAbsoluteTimes(segments);
+  if (!abs) return [];
+  const waits = [];
+  for (let i = 1; i < abs.length; i++) {
+    waits.push(Math.max(abs[i].depAbs - abs[i - 1].arrAbs, 0));
   }
-  return changeTimes;
+  return waits.map(w => formatDuration(w));
 }
 
-// Find all connections (direct, 1-stop, 2-stop)
 function findAllConnections(routes, query) {
   const {
-    departure = '',
-    arrival = '',
-    departureTime = '',
-    arrivalTime = '',
-    trainType = '',
-    daysOfOperation = '',
-    firstClassPrice = '',
-    secondClassPrice = ''
+    departure = "",
+    arrival = "",
+    departureTime = "",
+    arrivalTime = "",
+    trainType = "",
+    daysOfOperation = "",
+    firstClassPrice = "",
+    secondClassPrice = ""
   } = query;
 
   const results = [];
 
   const matches = (r) => {
-    return (!departure || r['Departure City'] === departure)
-      && (!arrival || r['Arrival City'] === arrival)
-      && (!departureTime || r['Departure Time'] === departureTime)
-      && (!arrivalTime || r['Arrival Time'] === arrivalTime)
-      && (!trainType || r['Train Type'] === trainType)
-      && (!daysOfOperation || r['Days of Operation'] === daysOfOperation)
-      && (!firstClassPrice || parseFloat(r['First Class ticket rate (in euro)']) == firstClassPrice)
-      && (!secondClassPrice || parseFloat(r['Second Class ticket rate (in euro)']) == secondClassPrice);
+    return (!departure || r["Departure City"] === departure)
+      && (!arrival || r["Arrival City"] === arrival)
+      && (!departureTime || r["Departure Time"] === departureTime)
+      && (!arrivalTime || r["Arrival Time"] === arrivalTime)
+      && (!trainType || r["Train Type"] === trainType)
+      && (!daysOfOperation || r["Days of Operation"] === daysOfOperation)
+      && (!firstClassPrice || parseFloat(r["First Class ticket rate (in euro)"]) == firstClassPrice)
+      && (!secondClassPrice || parseFloat(r["Second Class ticket rate (in euro)"]) == secondClassPrice);
+  };
+
+  const addConnection = (segments) => {
+    const abs = buildAbsoluteTimes(segments);
+    if (!abs) return;
+
+    const firstDepAbs = abs[0].depAbs;
+    const lastArrAbs = abs[abs.length - 1].arrAbs;
+    const arrivalRaw = segments[segments.length - 1]["Arrival Time"];
+    const arrivalWithDays = formatArrivalWithDays(firstDepAbs, lastArrAbs, arrivalRaw);
+
+    results.push({
+      segments,
+      departure: segments[0]["Departure City"],
+      arrival: segments[segments.length - 1]["Arrival City"],
+      trainType: segments.map(s => s["Train Type"]).join(" → "),
+      daysOfOperation: segments.map(s => s["Days of Operation"]).join(", "),
+      firstClassPrice: segments.reduce((sum, s) => sum + parseFloat(s["First Class ticket rate (in euro)"] || 0), 0),
+      secondClassPrice: segments.reduce((sum, s) => sum + parseFloat(s["Second Class ticket rate (in euro)"] || 0), 0),
+      duration: calculateConnectionDuration(segments),
+      changeTimes: calculateChangeTimes(segments),
+      arrivalTimeWithDays: arrivalWithDays
+    });
   };
 
   // Direct connections
-  routes.filter(matches).forEach(r => {
-    results.push({
-      segments: [r],
-      departure: r['Departure City'],
-      arrival: r['Arrival City'],
-      trainType: r['Train Type'],
-      daysOfOperation: r['Days of Operation'],
-      firstClassPrice: parseFloat(r['First Class ticket rate (in euro)']),
-      secondClassPrice: parseFloat(r['Second Class ticket rate (in euro)']),
-      duration: calculateConnectionDuration([r]),
-      changeTimes: [], // direct trip → no changes
-    });
-  });
+  routes.filter(matches).forEach(r => addConnection([r]));
 
   // 1-stop connections
-  const firstLegs = routes.filter(r => !departure || r['Departure City'] === departure);
+  const firstLegs = routes.filter(r => !departure || r["Departure City"] === departure);
   firstLegs.forEach(r1 => {
     const secondLegs = routes.filter(r2 =>
-      r2['Departure City'] === r1['Arrival City'] &&
-      (!arrival || r2['Arrival City'] === arrival)
+      r2["Departure City"] === r1["Arrival City"] &&
+      (!arrival || r2["Arrival City"] === arrival)
     );
-
-    secondLegs.forEach(r2 => {
-      if (!trainType || `${r1['Train Type']} → ${r2['Train Type']}`.includes(trainType)) {
-        const segments = [r1, r2];
-        results.push({
-          segments,
-          departure: r1['Departure City'],
-          arrival: r2['Arrival City'],
-          trainType: `${r1['Train Type']} → ${r2['Train Type']}`,
-          daysOfOperation: `${r1['Days of Operation']}, ${r2['Days of Operation']}`,
-          firstClassPrice: parseFloat(r1['First Class ticket rate (in euro)']) + parseFloat(r2['First Class ticket rate (in euro)']),
-          secondClassPrice: parseFloat(r1['Second Class ticket rate (in euro)']) + parseFloat(r2['Second Class ticket rate (in euro)']),
-          duration: calculateConnectionDuration(segments),
-          changeTimes: calculateChangeTimes(segments),
-        });
-      }
-    });
+    secondLegs.forEach(r2 => addConnection([r1, r2]));
   });
 
   // 2-stop connections
   firstLegs.forEach(r1 => {
     const secondLegs = routes.filter(r2 =>
-      r2['Departure City'] === r1['Arrival City'] &&
-      (!arrival || r2['Arrival City'] !== arrival)
+      r2["Departure City"] === r1["Arrival City"] &&
+      (!arrival || r2["Arrival City"] !== arrival)
     );
-
     secondLegs.forEach(r2 => {
       const thirdLegs = routes.filter(r3 =>
-        r3['Departure City'] === r2['Arrival City'] &&
-        (!arrival || r3['Arrival City'] === arrival)
+        r3["Departure City"] === r2["Arrival City"] &&
+        (!arrival || r3["Arrival City"] === arrival)
       );
-
-      thirdLegs.forEach(r3 => {
-        if (!trainType || `${r1['Train Type']} → ${r2['Train Type']} → ${r3['Train Type']}`.includes(trainType)) {
-          const segments = [r1, r2, r3];
-          results.push({
-            segments,
-            departure: r1['Departure City'],
-            arrival: r3['Arrival City'],
-            trainType: `${r1['Train Type']} → ${r2['Train Type']} → ${r3['Train Type']}`,
-            daysOfOperation: `${r1['Days of Operation']}, ${r2['Days of Operation']}, ${r3['Days of Operation']}`,
-            firstClassPrice: parseFloat(r1['First Class ticket rate (in euro)']) + parseFloat(r2['First Class ticket rate (in euro)']) + parseFloat(r3['First Class ticket rate (in euro)']),
-            secondClassPrice: parseFloat(r1['Second Class ticket rate (in euro)']) + parseFloat(r2['Second Class ticket rate (in euro)']) + parseFloat(r3['Second Class ticket rate (in euro)']),
-            duration: calculateConnectionDuration(segments),
-            changeTimes: calculateChangeTimes(segments),
-          });
-        }
-      });
+      thirdLegs.forEach(r3 => addConnection([r1, r2, r3]));
     });
   });
 

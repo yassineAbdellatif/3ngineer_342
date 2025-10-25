@@ -1,0 +1,45 @@
+[
+  {
+    "tripId": "9NI96YFP",
+    "connection": {
+      "departure": "Paris",
+      "arrival": "Berlin",
+      "departureDate": "2025-10-24T09:00:00Z"
+    },
+    "reservations": [
+      {
+        "ticketId": 1,
+        "traveller": {
+          "name": "Alice Johnson",
+          "age": 40,
+          "id": "A123"
+        }
+      },
+      {
+        "ticketId": 2,
+        "traveller": {
+          "name": "Bob Johnson",
+          "age": 42,
+          "id": "B123"
+        }
+      },
+      {
+        "ticketId": 3,
+        "traveller": {
+          "name": "Eve Johnson",
+          "age": 10,
+          "id": "E123"
+        }
+      },
+      {
+        "ticketId": 4,
+        "traveller": {
+          "name": "Max Johnson",
+          "age": 8,
+          "id": "M123"
+        }
+      }
+    ],
+    "bookedAt": "2025-10-24T02:11:30.676Z"
+  }
+]
