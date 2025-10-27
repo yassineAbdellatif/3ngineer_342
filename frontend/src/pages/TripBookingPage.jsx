@@ -20,9 +20,9 @@ export default function TripBookingPage({ selectedConnection }) {
     setLoading(true);
     try {
       const res = await bookTrip(travellers, selectedConnection);
-      setMessage(`✅ Trip booked successfully! Trip ID: ${res.trip.tripId}`);
+      setMessage(`Trip booked successfully! Trip ID: ${res.trip.tripId}`);
     } catch (err) {
-      setMessage(`❌ ${err.message}`);
+      setMessage(`${err.message}`);
     }
     setLoading(false);
   };
