@@ -1,57 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Container, Typography } from '@mui/material';
-import SearchForm from '../components/SearchForm';
-import ResultsTable from '../components/ResultsTable';
-import { searchConnections, getAllConnections } from '../services/api';
+import { useState } from "react";
+import { Container, Typography, Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import SearchForm from "../components/SearchForm";
+import ResultsTable from "../components/ResultsTable";
+import { searchConnections } from "../services/api";
 
-export default function HomePage() {
+export default function HomePage({ onSelectConnection }) {
   const [results, setResults] = useState([]);
-  const [allConnections, setAllConnections] = useState([]);
-
-  useEffect(() => {
-    const loadConnections = async () => {
-      const data = await getAllConnections();
-      setAllConnections(data);
-      setResults(data);
-    };
-    loadConnections();
-  }, []);
+  const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
 
   const handleSearch = async (query) => {
-    const filteredResults = allConnections.filter(trip => {
-    const firstSeg = trip.segments[0];
-    const lastSeg = trip.segments[trip.segments.length - 1];
-     
-    const matchesDeparture = !query.departure || 
-      firstSeg['Departure City'].toLowerCase().includes(query.departure);
-      
-    const matchesArrival = !query.arrival || 
-      lastSeg['Arrival City'].toLowerCase().includes(query.arrival);
-      
-    const matchesDepartureTime = !query.departureTime || 
-      firstSeg['Departure Time'].includes(query.departureTime);
-      
-    const matchesArrivalTime = !query.arrivalTime || 
-      lastSeg['Arrival Time'].includes(query.arrivalTime);
-      
-    const matchesTrainType = !query.trainType || 
-      trip.trainType.toLowerCase().includes(query.trainType);
-      
-    const matchesDaysOfOperation = !query.daysOfOperation || 
-      trip.daysOfOperation.toLowerCase().includes(query.daysOfOperation);
-      
-    const matchesFirstClassPrice = !query.firstClassPrice || 
-      parseFloat(trip.firstClassPrice) <= parseFloat(query.firstClassPrice);
-      
-    const matchesSecondClassPrice = !query.secondClassPrice || 
-      parseFloat(trip.secondClassPrice) <= parseFloat(query.secondClassPrice);
-      
-    return matchesDeparture && matchesArrival && matchesDepartureTime && 
-          matchesArrivalTime && matchesTrainType && matchesDaysOfOperation && 
-          matchesFirstClassPrice && matchesSecondClassPrice;
-    });
-    
-    setResults(filteredResults);
+    const data = await searchConnections(query);
+    setResults(data);
+  };
+
+  const handleSelect = (trip) => {
+    setSelected(trip);
+    onSelectConnection(trip);
   };
 
   return (
@@ -59,8 +25,25 @@ export default function HomePage() {
       <Typography variant="h3" gutterBottom>
         Train Connection Search
       </Typography>
+
       <SearchForm onSearch={handleSearch} />
-      <ResultsTable results={results} />
+
+      <ResultsTable results={results} onSelect={handleSelect} />
+
+      {selected && (
+        <div style={{ marginTop: "20px" }}>
+          <Typography variant="h6">
+            Selected Trip: {selected.departure} → {selected.arrival}
+          </Typography>
+          <Button
+            variant="contained"
+            sx={{ mt: 2 }}
+            onClick={() => navigate("/book")}
+          >
+            Book This Trip
+          </Button>
+        </div>
+      )}
     </Container>
   );
 }
