@@ -1,6 +1,6 @@
 [
   {
-    "tripId": "9NI96YFP",
+    "tripId": "F404969E",
     "connection": {
       "departure": "Paris",
       "arrival": "Berlin",
@@ -40,6 +40,108 @@
         }
       }
     ],
-    "bookedAt": "2025-10-24T02:11:30.676Z"
+    "bookedAt": "2025-10-29T01:11:25.770Z"
+  },
+  {
+    "tripId": "X9RW0P49",
+    "connection": {
+      "segments": [
+        {
+          "Route ID": "R00427",
+          "Departure City": "Brașov",
+          "Arrival City": "Burgas",
+          "Departure Time": "15:30",
+          "Arrival Time": "17:30",
+          "Train Type": "ICE",
+          "Days of Operation": "Fri-Sun",
+          "First Class ticket rate (in euro)": "74",
+          "Second Class ticket rate (in euro)": "48"
+        },
+        {
+          "Route ID": "R00593",
+          "Departure City": "Burgas",
+          "Arrival City": "Varna",
+          "Departure Time": "17:30",
+          "Arrival Time": "18:24",
+          "Train Type": "Thalys",
+          "Days of Operation": "Daily",
+          "First Class ticket rate (in euro)": "40",
+          "Second Class ticket rate (in euro)": "28"
+        }
+      ],
+      "departure": "Brașov",
+      "arrival": "Varna",
+      "trainType": "ICE → Thalys",
+      "daysOfOperation": "Fri-Sun, Daily",
+      "firstClassPrice": 114,
+      "secondClassPrice": 76,
+      "duration": "2h 54m",
+      "changeTimes": [
+        "0h 0m"
+      ],
+      "arrivalTimeWithDays": "18:24"
+    },
+    "reservations": [
+      {
+        "ticketId": 1,
+        "traveller": {
+          "name": "Alex",
+          "age": "12",
+          "id": "4182"
+        }
+      }
+    ],
+    "bookedAt": "2025-10-30T03:02:45.068Z"
+  },
+  {
+    "tripId": "EQ1JV7TO",
+    "connection": {
+      "segments": [
+        {
+          "Route ID": "R00753",
+          "Departure City": "Cork",
+          "Arrival City": "Reading",
+          "Departure Time": "14:10",
+          "Arrival Time": "16:15",
+          "Train Type": "AVE",
+          "Days of Operation": "Mon-Fri",
+          "First Class ticket rate (in euro)": "79",
+          "Second Class ticket rate (in euro)": "55"
+        },
+        {
+          "Route ID": "R02236",
+          "Departure City": "Reading",
+          "Arrival City": "Portsmouth",
+          "Departure Time": "16:20",
+          "Arrival Time": "17:20",
+          "Train Type": "Railjet",
+          "Days of Operation": "Fri-Sun",
+          "First Class ticket rate (in euro)": "51",
+          "Second Class ticket rate (in euro)": "36"
+        }
+      ],
+      "departure": "Cork",
+      "arrival": "Portsmouth",
+      "trainType": "AVE → Railjet",
+      "daysOfOperation": "Mon-Fri, Fri-Sun",
+      "firstClassPrice": 130,
+      "secondClassPrice": 91,
+      "duration": "3h 10m",
+      "changeTimes": [
+        "0h 5m"
+      ],
+      "arrivalTimeWithDays": "17:20"
+    },
+    "reservations": [
+      {
+        "ticketId": 2,
+        "traveller": {
+          "name": "Bob",
+          "age": "12",
+          "id": "idl"
+        }
+      }
+    ],
+    "bookedAt": "2025-10-30T03:22:52.703Z"
   }
 ]

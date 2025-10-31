@@ -5,7 +5,7 @@ const API_BASE = "http://localhost:5000/api";
 // --- Existing search function ---
 export const searchConnections = async (query) => {
   try {
-    const response = await axios.get(`${API_BASE}/search`, { params: query });
+    const response = await axios.get(`${API_BASE}/connections`, { params: query });
     return response.data;
   } catch (error) {
     console.error("API error", error);
