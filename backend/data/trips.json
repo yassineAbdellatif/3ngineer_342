@@ -41,5 +41,114 @@
       }
     ],
     "bookedAt": "2025-10-24T02:11:30.676Z"
+  },
+  {
+    "tripId": "FSPGIDBL",
+    "connection": {
+      "segments": [
+        {
+          "Route ID": "R00476",
+          "Departure City": "Brighton",
+          "Arrival City": "Southampton",
+          "Departure Time": "13:35",
+          "Arrival Time": "16:44",
+          "Train Type": "AVE",
+          "Days of Operation": "Fri-Sun",
+          "First Class ticket rate (in euro)": "92",
+          "Second Class ticket rate (in euro)": "58"
+        }
+      ],
+      "departure": "Brighton",
+      "arrival": "Southampton",
+      "trainType": "AVE",
+      "daysOfOperation": "Fri-Sun",
+      "firstClassPrice": 92,
+      "secondClassPrice": 58,
+      "duration": "3h 9m",
+      "changeTimes": [],
+      "arrivalTimeWithDays": "16:44"
+    },
+    "reservations": [
+      {
+        "ticketId": 1,
+        "traveller": {
+          "name": "samm",
+          "age": "11",
+          "id": "12"
+        }
+      }
+    ],
+    "bookedAt": "2025-11-07T17:22:45.420Z"
+  },
+  {
+    "tripId": "23QOZ3CL",
+    "connection": {
+      "segments": [
+        {
+          "Route ID": "R00509",
+          "Departure City": "Brno",
+          "Arrival City": "České Budějovice",
+          "Departure Time": "15:20",
+          "Arrival Time": "16:58",
+          "Train Type": "Frecciarossa",
+          "Days of Operation": "Fri-Sun",
+          "First Class ticket rate (in euro)": "52",
+          "Second Class ticket rate (in euro)": "35"
+        },
+        {
+          "Route ID": "R03063",
+          "Departure City": "České Budějovice",
+          "Arrival City": "Prague",
+          "Departure Time": "17:50",
+          "Arrival Time": "20:42",
+          "Train Type": "Intercités",
+          "Days of Operation": "Daily",
+          "First Class ticket rate (in euro)": "67",
+          "Second Class ticket rate (in euro)": "49"
+        },
+        {
+          "Route ID": "R02196",
+          "Departure City": "Prague",
+          "Arrival City": "Krakow",
+          "Departure Time": "05:55",
+          "Arrival Time": "08:08",
+          "Train Type": "RJX",
+          "Days of Operation": "Sat-Sun",
+          "First Class ticket rate (in euro)": "85",
+          "Second Class ticket rate (in euro)": "58"
+        }
+      ],
+      "departure": "Brno",
+      "arrival": "Krakow",
+      "trainType": "Frecciarossa → Intercités → RJX",
+      "daysOfOperation": "Fri-Sun, Daily, Sat-Sun",
+      "firstClassPrice": 204,
+      "secondClassPrice": 142,
+      "duration": "16h 48m",
+      "changeTimes": [
+        "0h 52m",
+        "9h 13m"
+      ],
+      "arrivalTimeWithDays": "08:08"
+    },
+    "reservations": [
+      {
+        "ticketId": 2,
+        "traveller": {
+          "name": "bob",
+          "age": "13",
+          "id": "13"
+        }
+      },
+      {
+        "ticketId": 3,
+        "traveller": {
+          "name": "son",
+          "age": "11",
+          "id": "1111"
+        }
+      }
+    ],
+    "bookedAt": "2025-11-07T17:26:12.329Z"
   }
 ]
