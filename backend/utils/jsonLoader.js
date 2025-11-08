@@ -1,88 +1,168 @@
-const fs = require('fs');
-const path = require('path');
+const { initDatabase } = require('../config/database');
 
 /**
- * Load the pre-generated connections catalog from JSON
+ * Get database instance (singleton pattern with automatic table creation)
  */
-function loadConnectionsCatalog() {
-  const filePath = path.join(__dirname, '../data/connections_catalog.json');
+async function getDatabase() {
+  // initDatabase now automatically creates tables if they don't exist
+  return await initDatabase();
+}
+
+/**
+ * Load connections from database
+ */
+async function loadConnectionsCatalog() {
+  const db = await getDatabase();
   
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    const catalog = JSON.parse(data);
-    console.log(`Connections catalog loaded: ${catalog.metadata.totalConnections} connections`);
-    return catalog;
-  } catch (error) {
-    console.error('Error loading connections catalog:', error.message);
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT COUNT(*) as count FROM routes';
+    
+    db.get(query, [], (err, row) => {
+      if (err) {
+        console.error('Error loading connections catalog:', err.message);
+        reject(err);
+      } else {
+        resolve({
+          metadata: {
+            totalConnections: row.count
+          }
+        });
+      }
+    });
+  });
 }
 
 /**
  * Filter connections based on search query
  */
-function filterConnections(catalog, query) {
+async function filterConnections(query) {
+  const db = await getDatabase();
+  
   const {
     departure = "",
     arrival = "",
     trainType = "",
     daysOfOperation = "",
-    maxPrice = "",
-    minStops = "",
-    maxStops = ""
+    maxPrice = ""
   } = query;
 
-  let results = catalog.connections;
+  let sql = 'SELECT * FROM routes WHERE 1=1';
+  const params = [];
 
   // Filter by departure city
   if (departure) {
-    const indices = catalog.byDeparture[departure] || [];
-    results = results.filter((_, idx) => indices.includes(idx));
+    sql += ' AND departure_city LIKE ?';
+    params.push(`%${departure}%`);
   }
 
   // Filter by arrival city
   if (arrival) {
-    const indices = catalog.byArrival[arrival] || [];
-    results = results.filter((_, idx) => indices.includes(idx));
+    sql += ' AND arrival_city LIKE ?';
+    params.push(`%${arrival}%`);
   }
 
-  // If both departure and arrival are specified, use the route index for efficiency
-  if (departure && arrival) {
-    const routeKey = `${departure}-${arrival}`;
-    const indices = catalog.byRoute[routeKey] || [];
-    results = indices.map(idx => catalog.connections[idx]);
+  // Filter by train type
+  if (trainType) {
+    sql += ' AND train_type LIKE ?';
+    params.push(`%${trainType}%`);
   }
 
-  // Additional filters
-  results = results.filter(conn => {
-    // Filter by train type
-    if (trainType && !conn.trainType.includes(trainType)) {
-      return false;
-    }
+  // Filter by days of operation
+  if (daysOfOperation) {
+    sql += ' AND days_of_operation LIKE ?';
+    params.push(`%${daysOfOperation}%`);
+  }
 
-    // Filter by days of operation
-    if (daysOfOperation && !conn.daysOfOperation.includes(daysOfOperation)) {
-      return false;
-    }
+  // Filter by max price (second class)
+  if (maxPrice) {
+    sql += ' AND second_class_rate <= ?';
+    params.push(parseFloat(maxPrice));
+  }
 
-    // Filter by max price (second class)
-    if (maxPrice && conn.secondClassPrice > parseFloat(maxPrice)) {
-      return false;
-    }
-
-    // Filter by number of stops (segments - 1)
-    const stops = conn.segments.length - 1;
-    if (minStops && stops < parseInt(minStops)) {
-      return false;
-    }
-    if (maxStops && stops > parseInt(maxStops)) {
-      return false;
-    }
-
-    return true;
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        console.error('Error querying routes:', err.message);
+        reject(err);
+      } else {
+        // Transform database rows to match previous format
+        const results = rows.map(row => ({
+          routeId: row.route_id,
+          departureCity: row.departure_city,
+          arrivalCity: row.arrival_city,
+          departureTime: row.departure_time,
+          arrivalTime: row.arrival_time,
+          trainType: row.train_type,
+          daysOfOperation: row.days_of_operation,
+          firstClassPrice: row.first_class_rate,
+          secondClassPrice: row.second_class_rate
+        }));
+        
+        resolve(results);
+      }
+    });
   });
-
-  return results;
 }
 
-module.exports = { loadConnectionsCatalog, filterConnections };
+/**
+ * Get route by ID
+ */
+async function getRouteById(routeId) {
+  const db = await getDatabase();
+  
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT * FROM routes WHERE route_id = ?',
+      [routeId],
+      (err, row) => {
+        if (err) {
+          reject(err);
+        } else if (!row) {
+          resolve(null);
+        } else {
+          resolve({
+            routeId: row.route_id,
+            departureCity: row.departure_city,
+            arrivalCity: row.arrival_city,
+            departureTime: row.departure_time,
+            arrivalTime: row.arrival_time,
+            trainType: row.train_type,
+            daysOfOperation: row.days_of_operation,
+            firstClassPrice: row.first_class_rate,
+            secondClassPrice: row.second_class_rate
+          });
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Get all unique cities
+ */
+async function getAllCities() {
+  const db = await getDatabase();
+  
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT DISTINCT departure_city as city FROM routes
+      UNION
+      SELECT DISTINCT arrival_city as city FROM routes
+      ORDER BY city
+    `, [], (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows.map(row => row.city));
+      }
+    });
+  });
+}
+
+module.exports = { 
+  loadConnectionsCatalog, 
+  filterConnections,
+  getRouteById,
+  getAllCities,
+  getDatabase
+};
