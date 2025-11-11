@@ -9,6 +9,62 @@ import {
   Paper
 } from '@mui/material';
 
+/**
+ * Check if layover time is valid based on time of day
+ */
+function isValidLayover(arrivalTime, departureTime) {
+  const [arrHour, arrMin] = arrivalTime.split(':').map(Number);
+  const [depHour, depMin] = departureTime.split(':').map(Number);
+  
+  // Convert to minutes since midnight
+  const arrivalMinutes = arrHour * 60 + arrMin;
+  let departureMinutes = depHour * 60 + depMin;
+  
+  // Handle next day scenario
+  if (departureMinutes < arrivalMinutes) {
+    departureMinutes += 24 * 60;
+  }
+  
+  // Calculate layover in minutes
+  const layoverMinutes = departureMinutes - arrivalMinutes;
+  
+  // Check time of day (6am = 6, 10pm = 22)
+  const isDaytime = (arrHour >= 6 && arrHour < 22);
+  
+  if (isDaytime) {
+    // Between 6am and 10pm: max 2 hours (120 minutes)
+    return layoverMinutes <= 120;
+  } else {
+    // Between 10pm and 6am: max 30 minutes
+    return layoverMinutes <= 30;
+  }
+}
+
+/**
+ * Validate all layovers in a trip
+ */
+function hasValidLayovers(trip) {
+  // If single segment, no layover to check
+  if (!trip.segments || trip.segments.length <= 1) {
+    return true;
+  }
+  
+  // Check each connection point
+  for (let i = 0; i < trip.segments.length - 1; i++) {
+    const currentSegment = trip.segments[i];
+    const nextSegment = trip.segments[i + 1];
+    
+    const arrivalTime = currentSegment["Arrival Time"] || currentSegment.arrivalTime;
+    const departureTime = nextSegment["Departure Time"] || nextSegment.departureTime;
+    
+    if (!isValidLayover(arrivalTime, departureTime)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 export default function ResultsTable({ results, onSelect }) {
   const [orderBy, setOrderBy] = useState('duration');
   const [order, setOrder] = useState('asc');
@@ -25,7 +81,10 @@ export default function ResultsTable({ results, onSelect }) {
     return match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 0;
   };
 
-  const sortedResults = [...results].sort((a, b) => {
+  // Filter results to only include trips with valid layovers
+  const filteredResults = results.filter(trip => hasValidLayovers(trip));
+
+  const sortedResults = [...filteredResults].sort((a, b) => {
     let valA = a[orderBy];
     let valB = b[orderBy];
 
@@ -38,6 +97,7 @@ export default function ResultsTable({ results, onSelect }) {
   });
 
   if (!results || results.length === 0) return <p>No trips found</p>;
+  if (filteredResults.length === 0) return <p>No trips found with valid layover times</p>;
 
   return (
     <TableContainer component={Paper}>
