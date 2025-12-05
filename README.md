@@ -11,3 +11,6 @@ To run the code, open 2 terminals:
 /frontend
 Write npm start on both terminals.
 
+Link for the video demo: 
+https://youtu.be/dLBe0tuf8Os
+
